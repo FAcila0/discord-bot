@@ -1,0 +1,22 @@
+{
+  "name": "discord-voice-announcement-bot",
+  "version": "1.0.0",
+  "description": "Ses kanalinda kalan ve duyuru yapan Discord botu",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "@discordjs/voice": "^0.19.2",
+    "discord.js": "^14.27.0",
+    "dotenv": "^16.6.1",
+    "express": "^5.3.0"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs"
+}
