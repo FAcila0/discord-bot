@@ -121,8 +121,8 @@ async function sesKanalinaBaglan() {
         channelId: channel.id,
         guildId: guild.id,
         adapterCreator: guild.voiceAdapterCreator,
-        selfMute: true,
-        selfDeaf: true
+        selfMute: false,
+        selfDeaf: false
     });
 
     voiceConnection.on('error', error => {
