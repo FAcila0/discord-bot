@@ -9,7 +9,14 @@ const {
     GatewayIntentBits,
     Events,
     ChannelType,
-    PermissionsBitField
+    PermissionsBitField,
+    EmbedBuilder,
+    ActionRowBuilder,
+    ButtonBuilder,
+    ButtonStyle,
+    ModalBuilder,
+    TextInputBuilder,
+    TextInputStyle
 } = require('discord.js');
 
 const {
@@ -74,7 +81,8 @@ const pool = new Pool({
         ? false
         : { rejectUnauthorized: false }
 });
-// GAKURAN VERITABANI TABLOLARI
+
+ // GAKURAN VERITABANI TABLOLARI
 async function gakuranTablolariniOlustur() {
     if (!DATABASE_URL) {
         throw new Error('DATABASE_URL ayarlanmamis!');
@@ -112,10 +120,55 @@ async function gakuranTablolariniOlustur() {
     console.log('Gakuran veritabani tablolari hazir!');
 }
 
+// ELO TABLOSUNU OLUSTUR
+async function gakuranLeaderboardGonder(channel) {
+    const sonuc = await pool.query(`
+        SELECT roblox_username, elo
+        FROM gakuran_players
+        ORDER BY elo DESC, roblox_username ASC
+    `);
+
+    const satirlar = sonuc.rows.length
+        ? sonuc.rows.map((oyuncu, index) =>
+            `**${index + 1}.** ${oyuncu.roblox_username} — **${String(oyuncu.elo).padStart(2, '0')} Elo**`
+        )
+        : ['_Henüz kayıtlı oyuncu yok._'];
+
+    const embed = new EmbedBuilder()
+        .setColor(0xD4AF37)
+        .setTitle('🏆 GAKURAN ELO SIRALAMASI')
+        .setDescription(satirlar.join('\n'))
+        .setFooter({ text: 'Kazanan +15 Elo • Kaybeden -15 Elo' })
+        .setTimestamp();
+
+    const butonlar = new ActionRowBuilder().addComponents(
+        new ButtonBuilder()
+            .setCustomId('gakuran_yenile')
+            .setLabel('Yenile')
+            .setEmoji('🔄')
+            .setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder()
+            .setCustomId('gakuran_kayit')
+            .setLabel('Kayıt Ol')
+            .setEmoji('📝')
+            .setStyle(ButtonStyle.Success)
+    );
+
+    await channel.send({
+        embeds: [embed],
+        components: [butonlar]
+    });
+}
+
+
 // DISCORD ID'LERI
 const GUILD_ID = '1563977216713429045';
 const VOICE_CHANNEL_ID = '1564354532295577780';
 const ANNOUNCEMENT_CHANNEL_ID = '1563977218768769135';
+const MEMBER_ROLE_ID = '1563985739903934636';
+const STAFF_ROLE_ID = '1564893159736221706';
+const LEADERBOARD_CHANNEL_ID = '1564893584312770630';
+const APPLICATION_CHANNEL_ID = '1564893854342193172';
 
 if (!TOKEN) {
     console.error('TOKEN eksik! Environment ayarlarini kontrol et.');
@@ -226,6 +279,26 @@ client.once(Events.ClientReady, async readyClient => {
 // BUTUN KOMUTLAR
 client.on(Events.MessageCreate, async message => {
     if (message.author.bot || !message.guild) return;
+    // GAKURAN LEADERBOARD KURULUM KOMUTU
+if (message.content === `${PREFIX}gakuran-kur`) {
+    if (
+        message.guild.id !== GUILD_ID ||
+        !message.member.roles.cache.has(STAFF_ROLE_ID)
+    ) {
+        return message.reply('❌ Bu işlem için yetkili rolü gerekiyor.');
+    }
+
+    const kanal = await client.channels
+        .fetch(LEADERBOARD_CHANNEL_ID)
+        .catch(() => null);
+
+    if (!kanal || !kanal.isTextBased()) {
+        return message.reply('❌ Leaderboard kanalı bulunamadı!');
+    }
+
+    await gakuranLeaderboardGonder(kanal);
+    return message.reply('✅ Gakuran leaderboard oluşturuldu!');
+}
     if (!message.content.startsWith(PREFIX)) return;
 
     const args = message.content
@@ -314,7 +387,7 @@ client.on(Events.MessageCreate, async message => {
             );
 
             const bilgi = await message.channel.send(
-                `🗑️ ${silinenler.size} mesaj silindi.`
+                `❌ ${silinenler.size} mesaj silindi.`
             );
 
             setTimeout(() => {
@@ -384,6 +457,7 @@ client.on(Events.MessageCreate, async message => {
             console.log('Duyuru gonderildi!');
         } catch (error) {
             console.error('Duyuru hatasi:', error);
+            await message.reply('❌ Duyuru gonderilemedi!');
         }
 
         return;
