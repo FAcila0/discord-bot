@@ -340,10 +340,10 @@ if (message.content === `${PREFIX}gakuran-kur`) {
             .addFields(
                 { name: `${PREFIX}yardÄ±m`, value: 'Bu komut listesini gÃ¶sterir.' },
                 { name: `${PREFIX}gakuran-kur`, value: 'Yetkililer: mevcut Elo tablosunu gÃ¼nceller.' },
-                { name: `${PREFIX}gakuran-mac`, value: 'Yetkililer: maÃ§ sonucu girme ve Elo gÃ¼ncelleme butonlarÄ±nÄ± gÃ¶sterir.' },
+                { name: `${PREFIX}gakuran-maÃ§`, value: 'Yetkililer: maÃ§ sonucu girme ve Elo gÃ¼ncelleme butonlarÄ±nÄ± gÃ¶sterir.' },
                 { name: `${PREFIX}gakuran-oyuncu-sil`, value: 'Yetkililer: oyuncu silme butonunu gÃ¶sterir; oyuncu adÄ± formdan girilir.' },
                 { name: `${PREFIX}duyuru <mesaj>`, value: 'Duyuru kanalÄ±na duyuru gÃ¶nderir.' },
-                { name: `${PREFIX}mesaj <kanalID> <mesaj>`, value: 'Yetkililer: belirtilen kanala istediÄŸin mesajÄ± gÃ¶nderir.' },
+                { name: `${PREFIX}mesaj <kanal kimliÄŸi> <mesaj>`, value: 'Yetkililer: belirtilen kanala istediÄŸin mesajÄ± gÃ¶nderir.' },
                 { name: `${PREFIX}sil <1-100>`, value: 'MesajlarÄ± siler; MesajlarÄ± YÃ¶net izni gerekir.' },
                 { name: `${PREFIX}prefix <yeni>`, value: 'Sunucu prefixini deÄŸiÅŸtirir; yÃ¶netici izni gerekir.' }
             )
@@ -352,7 +352,7 @@ if (message.content === `${PREFIX}gakuran-kur`) {
     }
 
     // MAC BUTONLARI: yetkililer iÃ§in maÃ§ sonucu veya oyuncu silme iÅŸlemi
-    if (command === 'gakuran-mac' || command === 'gakuran-oyuncu-sil') {
+    if (command === 'gakuran-maÃ§' || command === 'gakuran-mac' || command === 'gakuran-oyuncu-sil') {
         if (message.guild.id !== GUILD_ID || !message.member.roles.cache.has(STAFF_ROLE_ID)) {
             return message.reply('âŒ Bu komut yalnÄ±zca Gakuran yetkilileri iÃ§indir.');
         }
@@ -382,7 +382,7 @@ if (message.content === `${PREFIX}gakuran-kur`) {
         const eslesme = komutVeDevami.match(/^(\d{17,20})\s+([\s\S]+)$/);
 
         if (!eslesme) {
-            return message.reply(`KullanÄ±m: \`${PREFIX}mesaj <kanalID> <mesaj>\`\nÃ–rnek: \`${PREFIX}mesaj 123456789012345678 Merhaba herkese!\``);
+            return message.reply(`KullanÄ±m: \`${PREFIX}mesaj <kanal kimliÄŸi> <mesaj>\`\nÃ–rnek: \`${PREFIX}mesaj 123456789012345678 Merhaba herkese!\``);
         }
 
         const kanalID = eslesme[1];
