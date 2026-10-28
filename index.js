@@ -16,7 +16,8 @@ const {
     ButtonStyle,
     ModalBuilder,
     TextInputBuilder,
-    TextInputStyle
+    TextInputStyle,
+    MessageFlags
 } = require('discord.js');
 
 const {
@@ -469,10 +470,10 @@ client.on(Events.InteractionCreate, async interaction => {
         // KAYIT OL: modal ac
         if (interaction.isButton() && interaction.customId === 'gakuran_kayit') {
             if (!interaction.inGuild() || interaction.guildId !== GUILD_ID) {
-                return interaction.reply({ content: 'Bu buton yalnızca Gakuran sunucusunda kullanılabilir.', ephemeral: true });
+                return interaction.reply({ content: 'Bu buton yalnızca Gakuran sunucusunda kullanılabilir.', flags: MessageFlags.Ephemeral });
             }
             if (interaction.channelId !== LEADERBOARD_CHANNEL_ID) {
-                return interaction.reply({ content: 'Kayıt işlemini liderlik tablosu kanalındaki butondan başlat.', ephemeral: true });
+                return interaction.reply({ content: 'Kayıt işlemini liderlik tablosu kanalındaki butondan başlat.', flags: MessageFlags.Ephemeral });
             }
 
             const modal = new ModalBuilder()
@@ -480,11 +481,11 @@ client.on(Events.InteractionCreate, async interaction => {
                 .setTitle('Gakuran Oyuncu Kaydı');
             const robloxInput = new TextInputBuilder()
                 .setCustomId('roblox_username')
-                .setLabel('Roblox kullanıcı adın')
-                .setPlaceholder('Roblox kullanıcı adını yaz')
+                .setLabel('Gakuran ismin')
+                .setPlaceholder('Gakuran ismini yaz')
                 .setStyle(TextInputStyle.Short)
-                .setMinLength(3)
-                .setMaxLength(20)
+                .setMinLength(2)
+                .setMaxLength(30)
                 .setRequired(true);
             modal.addComponents(new ActionRowBuilder().addComponents(robloxInput));
             return interaction.showModal(modal);
@@ -493,7 +494,7 @@ client.on(Events.InteractionCreate, async interaction => {
         // LEADERBOARD YENİLE
         if (interaction.isButton() && interaction.customId === 'gakuran_yenile') {
             if (!interaction.inGuild() || interaction.guildId !== GUILD_ID || interaction.channelId !== LEADERBOARD_CHANNEL_ID) {
-                return interaction.reply({ content: 'Bu buton yalnızca Gakuran liderlik tablosu kanalında kullanılabilir.', ephemeral: true });
+                return interaction.reply({ content: 'Bu buton yalnızca Gakuran liderlik tablosu kanalında kullanılabilir.', flags: MessageFlags.Ephemeral });
             }
             await interaction.deferUpdate();
             await interaction.message.edit(await gakuranLeaderboardVerisi());
@@ -503,17 +504,18 @@ client.on(Events.InteractionCreate, async interaction => {
         // KAYIT FORMU GÖNDERİLDİ
         if (interaction.isModalSubmit() && interaction.customId === 'gakuran_kayit_modal') {
             if (!interaction.inGuild() || interaction.guildId !== GUILD_ID) {
-                return interaction.reply({ content: 'Bu kayıt formu bu sunucuda kullanılamaz.', ephemeral: true });
+                return interaction.reply({ content: 'Bu kayıt formu bu sunucuda kullanılamaz.', flags: MessageFlags.Ephemeral });
             }
 
-            const robloxUsername = interaction.fields.getTextInputValue('roblox_username').trim();
-            if (!/^[A-Za-z0-9_]{3,20}$/.test(robloxUsername)) {
-                return interaction.reply({ content: 'Roblox kullanıcı adı 3-20 karakter olmalı; yalnızca harf, rakam ve _ kullanabilirsin.', ephemeral: true });
+            const gakuranName = interaction.fields.getTextInputValue('roblox_username').trim();
+            if (!/^[\p{L}\p{N}_ ]{2,20}$/u.test(gakuranName)) {
+                return interaction.reply({ content: 'Gakuran ismi 2-20 karakter olmalı; Türkçe harfler, harfler, rakamlar, boşluk ve _ kullanabilirsin.', flags: MessageFlags.Ephemeral });
             }
+            const robloxUsername = gakuranName;
 
             const player = await pool.query('SELECT discord_id FROM gakuran_players WHERE discord_id = $1', [interaction.user.id]);
             if (player.rowCount) {
-                return interaction.reply({ content: 'Zaten Gakuran sistemine kayıtlısın.', ephemeral: true });
+                return interaction.reply({ content: 'Zaten Gakuran sistemine kayıtlısın.', flags: MessageFlags.Ephemeral });
             }
 
             let registration;
@@ -525,7 +527,7 @@ client.on(Events.InteractionCreate, async interaction => {
                 );
             } catch (error) {
                 if (error.code === '23505') {
-                    return interaction.reply({ content: 'Zaten bekleyen bir kayıt başvurun var.', ephemeral: true });
+                    return interaction.reply({ content: 'Zaten bekleyen bir kayıt başvurun var.', flags: MessageFlags.Ephemeral });
                 }
                 throw error;
             }
@@ -533,7 +535,7 @@ client.on(Events.InteractionCreate, async interaction => {
             const applicationChannel = await client.channels.fetch(APPLICATION_CHANNEL_ID).catch(() => null);
             if (!applicationChannel || !applicationChannel.isTextBased() || !applicationChannel.guild || applicationChannel.guild.id !== GUILD_ID) {
                 await pool.query("UPDATE gakuran_registrations SET status = 'rejected' WHERE id = $1", [registration.rows[0].id]);
-                return interaction.reply({ content: 'Başvuru kanalı bulunamadı. Yetkililere haber ver.', ephemeral: true });
+                return interaction.reply({ content: 'Başvuru kanalı bulunamadı. Yetkililere haber ver.', flags: MessageFlags.Ephemeral });
             }
 
             const appEmbed = new EmbedBuilder()
@@ -541,7 +543,7 @@ client.on(Events.InteractionCreate, async interaction => {
                 .setTitle('Yeni Gakuran Kayıt Başvurusu')
                 .addFields(
                     { name: 'Discord', value: `${interaction.user.tag} (<@${interaction.user.id}>)` },
-                    { name: 'Roblox kullanıcı adı', value: robloxUsername },
+                    { name: 'Gakuran ismi', value: robloxUsername },
                     { name: 'Başvuru ID', value: String(registration.rows[0].id) }
                 )
                 .setTimestamp();
@@ -556,25 +558,25 @@ client.on(Events.InteractionCreate, async interaction => {
                 await pool.query("UPDATE gakuran_registrations SET status = 'rejected' WHERE id = $1", [registration.rows[0].id]);
                 throw error;
             }
-            return interaction.reply({ content: 'Başvurun yetkililere gönderildi. Onaylandığında kayıt tamamlanacak.', ephemeral: true });
+            return interaction.reply({ content: 'Başvurun yetkililere gönderildi. Onaylandığında kayıt tamamlanacak.', flags: MessageFlags.Ephemeral });
         }
 
         // YETKİLİ BAŞVURU ONAY / RED
         if (interaction.isButton() && (interaction.customId.startsWith('gakuran_onayla_') || interaction.customId.startsWith('gakuran_reddet_'))) {
             const staffMember = interaction.inGuild() ? await interaction.guild.members.fetch(interaction.user.id).catch(() => null) : null;
             if (!staffMember || interaction.guildId !== GUILD_ID || !staffMember.roles.cache.has(STAFF_ROLE_ID)) {
-                return interaction.reply({ content: 'Bu işlem yalnızca yetkililer tarafından yapılabilir.', ephemeral: true });
+                return interaction.reply({ content: 'Bu işlem yalnızca yetkililer tarafından yapılabilir.', flags: MessageFlags.Ephemeral });
             }
 
             const approve = interaction.customId.startsWith('gakuran_onayla_');
             const registrationId = interaction.customId.slice(approve ? 'gakuran_onayla_'.length : 'gakuran_reddet_'.length);
             if (!/^\d+$/.test(registrationId)) {
-                return interaction.reply({ content: 'Başvuru numarası geçersiz.', ephemeral: true });
+                return interaction.reply({ content: 'Başvuru numarası geçersiz.', flags: MessageFlags.Ephemeral });
             }
 
             const result = await pool.query("SELECT * FROM gakuran_registrations WHERE id = $1 AND status = 'pending'", [registrationId]);
             if (!result.rowCount) {
-                return interaction.reply({ content: 'Bu başvuru artık beklemede değil veya bulunamadı.', ephemeral: true });
+                return interaction.reply({ content: 'Bu başvuru artık beklemede değil veya bulunamadı.', flags: MessageFlags.Ephemeral });
             }
             const reg = result.rows[0];
 
@@ -582,7 +584,7 @@ client.on(Events.InteractionCreate, async interaction => {
                 const duplicate = await pool.query('SELECT discord_id FROM gakuran_players WHERE discord_id = $1 OR LOWER(roblox_username) = LOWER($2)', [reg.discord_id, reg.roblox_username]);
                 if (duplicate.rowCount) {
                     await pool.query("UPDATE gakuran_registrations SET status = 'rejected' WHERE id = $1", [registrationId]);
-                    await interaction.update({ content: 'Başvuru reddedildi: Discord hesabı veya Roblox kullanıcı adı zaten kayıtlı.', embeds: interaction.message.embeds, components: [] });
+                    await interaction.update({ content: 'Başvuru reddedildi: Discord hesabı veya Gakuran ismi zaten kayıtlı.', embeds: interaction.message.embeds, components: [] });
                     return;
                 }
                 const dbClient = await pool.connect();
@@ -601,7 +603,7 @@ client.on(Events.InteractionCreate, async interaction => {
                 const leaderboard = await client.channels.fetch(LEADERBOARD_CHANNEL_ID).catch(() => null);
                 if (leaderboard?.isTextBased()) await leaderboard.send(await gakuranLeaderboardVerisi());
                 const applicant = await client.users.fetch(reg.discord_id).catch(() => null);
-                if (applicant) await applicant.send(`Gakuran kaydın onaylandı! Roblox kullanıcı adın: ${reg.roblox_username}`).catch(() => {});
+                if (applicant) await applicant.send(`Gakuran kaydın onaylandı! Gakuran ismin: ${reg.roblox_username}`).catch(() => {});
                 return;
             }
 
@@ -613,7 +615,7 @@ client.on(Events.InteractionCreate, async interaction => {
     } catch (error) {
         console.error('Gakuran interaction hatası:', error);
         if (interaction.isRepliable() && !interaction.replied && !interaction.deferred) {
-            await interaction.reply({ content: 'İşlem sırasında hata oluştu. Yetkililer Render Logs bölümünü kontrol etsin.', ephemeral: true }).catch(() => {});
+            await interaction.reply({ content: 'İşlem sırasında hata oluştu. Yetkililer Render Logs bölümünü kontrol etsin.', flags: MessageFlags.Ephemeral }).catch(() => {});
         }
     }
 });
