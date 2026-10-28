@@ -69,10 +69,10 @@ app.get('/', (req, res) => {
 });
 
 app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Web sunucusu ${PORT} portunda çalışıyor.`);
+    console.log(`Web sunucusu ${PORT} portunda Ã§alÄ±ÅŸÄ±yor.`);
 });
 
-// GİZLİ TOKEN
+// GÄ°ZLÄ° TOKEN
 const TOKEN = process.env.TOKEN;
 const DATABASE_URL = process.env.DATABASE_URL;
 
@@ -86,7 +86,7 @@ const pool = new Pool({
  // GAKURAN VERITABANI TABLOLARI
 async function gakuranTablolariniOlustur() {
     if (!DATABASE_URL) {
-        throw new Error('DATABASE_URL ayarlanmamış!');
+        throw new Error('DATABASE_URL ayarlanmamÄ±ÅŸ!');
     }
 
     await pool.query(`
@@ -118,10 +118,10 @@ async function gakuranTablolariniOlustur() {
         WHERE status = 'pending';
     `);
 
-    console.log('Gakuran veritabanı tablolari hazir!');
+    console.log('Gakuran veritabanÄ± tablolari hazir!');
 }
 
-// ELO TABLOSUNU OLUŞTUR
+// ELO TABLOSUNU OLUÅTUR
 async function gakuranLeaderboardVerisi() {
     const sonuc = await pool.query(`
         SELECT roblox_username, elo
@@ -131,15 +131,15 @@ async function gakuranLeaderboardVerisi() {
 
     const satirlar = sonuc.rows.length
         ? sonuc.rows.map((oyuncu, index) =>
-            `**${index + 1}.** ${oyuncu.roblox_username} — **${String(oyuncu.elo).padStart(2, '0')} Elo**`
+            `**${index + 1}.** ${oyuncu.roblox_username} â€” **${String(oyuncu.elo).padStart(2, '0')} Elo**`
         )
-        : ['_Henüz kayıtlı oyuncu yok._'];
+        : ['_HenÃ¼z kayÄ±tlÄ± oyuncu yok._'];
 
     const embed = new EmbedBuilder()
         .setColor(0xD4AF37)
         .setTitle('\u{1F3C6} GAKURAN ELO SIRALAMASI')
         .setDescription(satirlar.join('\n'))
-        .setFooter({ text: 'Kazanan +15 Elo • Kaybeden -15 Elo' })
+        .setFooter({ text: 'Kazanan +15 Elo â€¢ Kaybeden -15 Elo' })
         .setTimestamp();
 
     const butonlar = new ActionRowBuilder().addComponents(
@@ -150,7 +150,7 @@ async function gakuranLeaderboardVerisi() {
             .setStyle(ButtonStyle.Secondary),
         new ButtonBuilder()
             .setCustomId('gakuran_kayit')
-            .setLabel('Kayıt Ol')
+            .setLabel('KayÄ±t Ol')
             .setEmoji('\u{1F4DD}')
             .setStyle(ButtonStyle.Success)
     );
@@ -162,17 +162,17 @@ async function gakuranLeaderboardGonder(channel) {
     await channel.send(await gakuranLeaderboardVerisi());
 }
 
-// Var olan liderlik tablosunu düzenle; her işlemde yeni mesaj oluşturma.
+// Var olan liderlik tablosunu dÃ¼zenle; her iÅŸlemde yeni mesaj oluÅŸturma.
 async function gakuranLeaderboardGuncelle() {
     const channel = await client.channels.fetch(LEADERBOARD_CHANNEL_ID).catch(() => null);
     if (!channel || !channel.isTextBased()) {
-        throw new Error('Liderlik tablosu kanalı bulunamadı.');
+        throw new Error('Liderlik tablosu kanalÄ± bulunamadÄ±.');
     }
 
     const messages = await channel.messages.fetch({ limit: 50 }).catch(() => null);
     const existing = messages?.find(message =>
         message.author.id === client.user.id &&
-        message.embeds.some(embed => embed.title === '🏆 GAKURAN ELO SIRALAMASI')
+        message.embeds.some(embed => embed.title === 'ğŸ† GAKURAN ELO SIRALAMASI')
     );
 
     if (existing) {
@@ -182,7 +182,7 @@ async function gakuranLeaderboardGuncelle() {
     }
 }
 
-// DISCORD ID’LERİ
+// DISCORD IDâ€™LERÄ°
 const GUILD_ID = '1563977216713429045';
 const VOICE_CHANNEL_ID = '1564354532295577780';
 const ANNOUNCEMENT_CHANNEL_ID = '1563977218768769135';
@@ -192,7 +192,7 @@ const LEADERBOARD_CHANNEL_ID = '1564893584312770630';
 const APPLICATION_CHANNEL_ID = '1564893854342193172';
 
 if (!TOKEN) {
-    console.error('TOKEN eksik! Environment ayarlarıni kontrol et.');
+    console.error('TOKEN eksik! Environment ayarlarÄ±ni kontrol et.');
     process.exit(1);
 }
 
@@ -246,7 +246,7 @@ async function sesKanalinaBaglan() {
     });
 
     voiceConnection.on('error', error => {
-        console.error('Ses baglantisi hatası:', error.message);
+        console.error('Ses baglantisi hatasÄ±:', error.message);
     });
 
     voiceConnection.on(
@@ -289,9 +289,9 @@ client.once(Events.ClientReady, async readyClient => {
 
     try {
         await gakuranTablolariniOlustur();
-        console.log('Gakuran sistemi veritabanına bağlandı!');
+        console.log('Gakuran sistemi veritabanÄ±na baÄŸlandÄ±!');
     } catch (error) {
-        console.error('Gakuran veritabanı hatası:', error.message);
+        console.error('Gakuran veritabanÄ± hatasÄ±:', error.message);
     }
 
     await sesKanalinaBaglan();
@@ -306,7 +306,7 @@ if (message.content === `${PREFIX}gakuran-kur`) {
         message.guild.id !== GUILD_ID ||
         !message.member.roles.cache.has(STAFF_ROLE_ID)
     ) {
-        return message.reply('\u{274C} Bu işlem için yetkili rolü gerekiyor.');
+        return message.reply('\u{274C} Bu iÅŸlem iÃ§in yetkili rolÃ¼ gerekiyor.');
     }
 
     const kanal = await client.channels
@@ -314,11 +314,11 @@ if (message.content === `${PREFIX}gakuran-kur`) {
         .catch(() => null);
 
     if (!kanal || !kanal.isTextBased()) {
-        return message.reply('\u{274C} Liderlik tablosu kanalı bulunamadı!');
+        return message.reply('\u{274C} Liderlik tablosu kanalÄ± bulunamadÄ±!');
     }
 
     await gakuranLeaderboardGuncelle();
-    return message.reply('\u{2705} Gakuran liderlik tablosu güncellendi; yeni tablo mesajı oluşturulmadı.');
+    return message.reply('\u{2705} Gakuran liderlik tablosu gÃ¼ncellendi; yeni tablo mesajÄ± oluÅŸturulmadÄ±.');
 }
     if (!message.content.startsWith(PREFIX)) return;
 
@@ -331,43 +331,78 @@ if (message.content === `${PREFIX}gakuran-kur`) {
 
     if (!command) return;
 
-    // YARDIM: mevcut komutlar ve kullanımları
-    if (command === 'yardım' || command === 'yardim' || command === 'help') {
+    // YARDIM: mevcut komutlar ve kullanÄ±mlarÄ±
+    if (command === 'yardÄ±m' || command === 'yardim' || command === 'help') {
         const helpEmbed = new EmbedBuilder()
             .setColor(0xD4AF37)
-            .setTitle('📖 Bot Komutları')
+            .setTitle('ğŸ“– Bot KomutlarÄ±')
             .setDescription(`Aktif prefix: \`${PREFIX}\``)
             .addFields(
-                { name: `${PREFIX}yardım`, value: 'Bu komut listesini gösterir.' },
-                { name: `${PREFIX}gakuran-kur`, value: 'Yetkililer: mevcut Elo tablosunu günceller.' },
-                { name: `${PREFIX}gakuran-mac`, value: 'Yetkililer: maç sonucu girme ve Elo güncelleme butonlarını gösterir.' },
-                { name: `${PREFIX}gakuran-oyuncu-sil`, value: 'Yetkililer: oyuncu silme butonunu gösterir; oyuncu adı formdan girilir.' },
-                { name: `${PREFIX}duyuru <mesaj>`, value: 'Duyuru kanalına duyuru gönderir.' },
-                { name: `${PREFIX}sil <1-100>`, value: 'Mesajları siler; Mesajları Yönet izni gerekir.' },
-                { name: `${PREFIX}prefix <yeni>`, value: 'Sunucu prefixini değiştirir; yönetici izni gerekir.' }
+                { name: `${PREFIX}yardÄ±m`, value: 'Bu komut listesini gÃ¶sterir.' },
+                { name: `${PREFIX}gakuran-kur`, value: 'Yetkililer: mevcut Elo tablosunu gÃ¼nceller.' },
+                { name: `${PREFIX}gakuran-mac`, value: 'Yetkililer: maÃ§ sonucu girme ve Elo gÃ¼ncelleme butonlarÄ±nÄ± gÃ¶sterir.' },
+                { name: `${PREFIX}gakuran-oyuncu-sil`, value: 'Yetkililer: oyuncu silme butonunu gÃ¶sterir; oyuncu adÄ± formdan girilir.' },
+                { name: `${PREFIX}duyuru <mesaj>`, value: 'Duyuru kanalÄ±na duyuru gÃ¶nderir.' },
+                { name: `${PREFIX}mesaj <kanalID> <mesaj>`, value: 'Yetkililer: belirtilen kanala istediÄŸin mesajÄ± gÃ¶nderir.' },
+                { name: `${PREFIX}sil <1-100>`, value: 'MesajlarÄ± siler; MesajlarÄ± YÃ¶net izni gerekir.' },
+                { name: `${PREFIX}prefix <yeni>`, value: 'Sunucu prefixini deÄŸiÅŸtirir; yÃ¶netici izni gerekir.' }
             )
             .setFooter({ text: 'Gakuran botu' });
         return message.reply({ embeds: [helpEmbed] });
     }
 
-    // MAC BUTONLARI: yetkililer için maç sonucu veya oyuncu silme işlemi
+    // MAC BUTONLARI: yetkililer iÃ§in maÃ§ sonucu veya oyuncu silme iÅŸlemi
     if (command === 'gakuran-mac' || command === 'gakuran-oyuncu-sil') {
         if (message.guild.id !== GUILD_ID || !message.member.roles.cache.has(STAFF_ROLE_ID)) {
-            return message.reply('❌ Bu komut yalnızca Gakuran yetkilileri içindir.');
+            return message.reply('âŒ Bu komut yalnÄ±zca Gakuran yetkilileri iÃ§indir.');
         }
         const row = new ActionRowBuilder().addComponents(
             new ButtonBuilder()
                 .setCustomId('gakuran_mac_formu')
-                .setLabel('Maç sonucu gir')
+                .setLabel('MaÃ§ sonucu gir')
                 .setStyle(ButtonStyle.Primary)
-                .setEmoji('🏆'),
+                .setEmoji('ğŸ†'),
             new ButtonBuilder()
                 .setCustomId('gakuran_oyuncu_sil_formu')
                 .setLabel('Oyuncu sil')
                 .setStyle(ButtonStyle.Danger)
-                .setEmoji('🗑️')
+                .setEmoji('ğŸ—‘ï¸')
         );
-        return message.reply({ content: 'İşlem yapmak için bir buton seç:', components: [row] });
+        return message.reply({ content: 'Ä°ÅŸlem yapmak iÃ§in bir buton seÃ§:', components: [row] });
+    }
+
+    // ISTENILEN KANALA MESAJ GONDER (GAKURAN YETKILILERI)
+    if (command === 'mesaj') {
+        if (message.guild.id !== GUILD_ID || !message.member.roles.cache.has(STAFF_ROLE_ID)) {
+            return message.reply('âŒ Bu komut yalnÄ±zca Gakuran yetkilileri iÃ§indir.');
+        }
+
+        const rawArgs = message.content.slice(PREFIX.length).trim();
+        const komutVeDevami = rawArgs.replace(/^\S+\s*/, '');
+        const eslesme = komutVeDevami.match(/^(\d{17,20})\s+([\s\S]+)$/);
+
+        if (!eslesme) {
+            return message.reply(`KullanÄ±m: \`${PREFIX}mesaj <kanalID> <mesaj>\`\nÃ–rnek: \`${PREFIX}mesaj 123456789012345678 Merhaba herkese!\``);
+        }
+
+        const kanalID = eslesme[1];
+        const gonderilecekMesaj = eslesme[2].trim();
+        if (!gonderilecekMesaj || gonderilecekMesaj.length > 2000) {
+            return message.reply('âŒ Mesaj boÅŸ olamaz ve 2000 karakteri geÃ§emez.');
+        }
+
+        const hedefKanal = await client.channels.fetch(kanalID).catch(() => null);
+        if (!hedefKanal || !hedefKanal.isTextBased() || !('send' in hedefKanal)) {
+            return message.reply('âŒ Bu kanal bulunamadÄ± veya mesaj gÃ¶nderilebilen bir metin kanalÄ± deÄŸil.');
+        }
+
+        try {
+            await hedefKanal.send({ content: gonderilecekMesaj });
+            return message.reply(`âœ… Mesaj <#${kanalID}> kanalÄ±na gÃ¶nderildi.`);
+        } catch (error) {
+            console.error('Mesaj gÃ¶nderme hatasÄ±:', error);
+            return message.reply('âŒ Mesaj gÃ¶nderilemedi. Botun o kanalda Mesaj GÃ¶nderme izni olduÄŸundan emin ol.');
+        }
     }
 
     // PREFIX DEGISTIR
@@ -376,7 +411,7 @@ if (message.content === `${PREFIX}gakuran-kur`) {
             PermissionsBitField.Flags.Administrator
         )) {
             return message.reply(
-                '\u{274C} Bu komut için yönetici izni gerekiyor.'
+                '\u{274C} Bu komut iÃ§in yÃ¶netici izni gerekiyor.'
             );
         }
 
@@ -394,14 +429,14 @@ if (message.content === `${PREFIX}gakuran-kur`) {
         try {
             prefixKaydet(PREFIX);
 
-            console.log(`Önek değişti: ${eskiPrefix} -> ${PREFIX}`);
+            console.log(`Ã–nek deÄŸiÅŸti: ${eskiPrefix} -> ${PREFIX}`);
 
             return message.reply(
-                `\u{2705} Önek değişti: ${eskiPrefix} \u{2192} ${PREFIX}`
+                `\u{2705} Ã–nek deÄŸiÅŸti: ${eskiPrefix} \u{2192} ${PREFIX}`
             );
         } catch (error) {
             PREFIX = eskiPrefix;
-            console.error('Prefix kaydetme hatası:', error);
+            console.error('Prefix kaydetme hatasÄ±:', error);
 
             return message.reply('\u{274C} Prefix kaydedilemedi!');
         }
@@ -413,7 +448,7 @@ if (message.content === `${PREFIX}gakuran-kur`) {
             PermissionsBitField.Flags.ManageMessages
         )) {
             return message.reply(
-                '\u{274C} Mesajları Yönet iznin yok!'
+                '\u{274C} MesajlarÄ± YÃ¶net iznin yok!'
             );
         }
 
@@ -436,7 +471,7 @@ if (message.content === `${PREFIX}gakuran-kur`) {
                 PermissionsBitField.Flags.ManageMessages
             )) {
             return message.reply(
-                '\u{274C} Botun Mesajları Yönet izni yok!'
+                '\u{274C} Botun MesajlarÄ± YÃ¶net izni yok!'
             );
         }
 
@@ -454,7 +489,7 @@ if (message.content === `${PREFIX}gakuran-kur`) {
                 bilgi.delete().catch(() => {});
             }, 3000);
         } catch (error) {
-            console.error('Mesaj silme hatası:', error);
+            console.error('Mesaj silme hatasÄ±:', error);
             await message.reply('\u{274C} Mesajlar silinemedi!');
         }
 
@@ -465,7 +500,7 @@ if (message.content === `${PREFIX}gakuran-kur`) {
     if (command === 'duyuru') {
         if (message.guild.id !== GUILD_ID) {
             return message.reply(
-                '\u{274C} Bu komut bu sunucuda kullanılamaz.'
+                '\u{274C} Bu komut bu sunucuda kullanÄ±lamaz.'
             );
         }
 
@@ -473,7 +508,7 @@ if (message.content === `${PREFIX}gakuran-kur`) {
 
         if (!duyuruMetni) {
             return message.reply(
-                `\u{274C} Duyuru yaz! Örnek: ${PREFIX}duyuru Sunucu acildi.`
+                `\u{274C} Duyuru yaz! Ã–rnek: ${PREFIX}duyuru Sunucu acildi.`
             );
         }
 
@@ -488,7 +523,7 @@ if (message.content === `${PREFIX}gakuran-kur`) {
             announcementChannel.guild.id !== GUILD_ID
         ) {
             return message.reply(
-                '\u{274C} Duyuru kanalı bulunamadı!'
+                '\u{274C} Duyuru kanalÄ± bulunamadÄ±!'
             );
         }
 
@@ -502,7 +537,7 @@ if (message.content === `${PREFIX}gakuran-kur`) {
             !permissions.has(PermissionsBitField.Flags.SendMessages)
         ) {
             return message.reply(
-                '\u{274C} Botun duyuru kanalına mesaj gönderme izni yok!'
+                '\u{274C} Botun duyuru kanalÄ±na mesaj gÃ¶nderme izni yok!'
             );
         }
 
@@ -514,25 +549,25 @@ if (message.content === `${PREFIX}gakuran-kur`) {
 
             await message.delete().catch(() => null);
 
-            console.log('Duyuru gönderildi!');
+            console.log('Duyuru gÃ¶nderildi!');
         } catch (error) {
-            console.error('Duyuru hatası:', error);
+            console.error('Duyuru hatasÄ±:', error);
         }
 
         return;
     }
 });
 
-// GAKURAN BUTONLARI VE BAŞVURU İŞLEMLERİ
+// GAKURAN BUTONLARI VE BAÅVURU Ä°ÅLEMLERÄ°
 client.on(Events.InteractionCreate, async interaction => {
     try {
-        // OYUNCU SİLME FORMUNU AÇ
+        // OYUNCU SÄ°LME FORMUNU AÃ‡
         if (interaction.isButton() && interaction.customId === 'gakuran_oyuncu_sil_formu') {
             const staffMember = interaction.inGuild()
                 ? await interaction.guild.members.fetch(interaction.user.id).catch(() => null)
                 : null;
             if (!staffMember || interaction.guildId !== GUILD_ID || !staffMember.roles.cache.has(STAFF_ROLE_ID)) {
-                return interaction.reply({ content: 'Bu işlem yalnızca Gakuran yetkilileri tarafından yapılabilir.', flags: MessageFlags.Ephemeral });
+                return interaction.reply({ content: 'Bu iÅŸlem yalnÄ±zca Gakuran yetkilileri tarafÄ±ndan yapÄ±labilir.', flags: MessageFlags.Ephemeral });
             }
             const modal = new ModalBuilder()
                 .setCustomId('gakuran_oyuncu_sil_modal')
@@ -540,7 +575,7 @@ client.on(Events.InteractionCreate, async interaction => {
             const nameInput = new TextInputBuilder()
                 .setCustomId('oyuncu_ismi')
                 .setLabel('Silinecek Gakuran oyuncu ismi')
-                .setPlaceholder('Tablodaki oyuncu adını yaz')
+                .setPlaceholder('Tablodaki oyuncu adÄ±nÄ± yaz')
                 .setStyle(TextInputStyle.Short)
                 .setMinLength(2)
                 .setMaxLength(30)
@@ -549,13 +584,13 @@ client.on(Events.InteractionCreate, async interaction => {
             return interaction.showModal(modal);
         }
 
-        // OYUNCU SİLME FORMU GÖNDERİLDİ
+        // OYUNCU SÄ°LME FORMU GÃ–NDERÄ°LDÄ°
         if (interaction.isModalSubmit() && interaction.customId === 'gakuran_oyuncu_sil_modal') {
             const staffMember = interaction.inGuild()
                 ? await interaction.guild.members.fetch(interaction.user.id).catch(() => null)
                 : null;
             if (!staffMember || interaction.guildId !== GUILD_ID || !staffMember.roles.cache.has(STAFF_ROLE_ID)) {
-                return interaction.reply({ content: 'Bu işlem yalnızca Gakuran yetkilileri tarafından yapılabilir.', flags: MessageFlags.Ephemeral });
+                return interaction.reply({ content: 'Bu iÅŸlem yalnÄ±zca Gakuran yetkilileri tarafÄ±ndan yapÄ±labilir.', flags: MessageFlags.Ephemeral });
             }
             const playerName = interaction.fields.getTextInputValue('oyuncu_ismi').trim();
             const deleted = await pool.query(
@@ -563,29 +598,29 @@ client.on(Events.InteractionCreate, async interaction => {
                 [playerName]
             );
             if (!deleted.rowCount) {
-                return interaction.reply({ content: `❌ "${playerName}" isimli kayıtlı oyuncu bulunamadı.`, flags: MessageFlags.Ephemeral });
+                return interaction.reply({ content: `âŒ "${playerName}" isimli kayÄ±tlÄ± oyuncu bulunamadÄ±.`, flags: MessageFlags.Ephemeral });
             }
             await gakuranLeaderboardGuncelle();
-            return interaction.reply({ content: `✅ **${deleted.rows[0].roblox_username}** oyuncusu Elo tablosundan silindi.`, flags: MessageFlags.Ephemeral });
+            return interaction.reply({ content: `âœ… **${deleted.rows[0].roblox_username}** oyuncusu Elo tablosundan silindi.`, flags: MessageFlags.Ephemeral });
         }
 
-        // MAÇ FORMUNU AÇ
+        // MAÃ‡ FORMUNU AÃ‡
         if (interaction.isButton() && interaction.customId === 'gakuran_mac_formu') {
             const staffMember = interaction.inGuild()
                 ? await interaction.guild.members.fetch(interaction.user.id).catch(() => null)
                 : null;
             if (!staffMember || interaction.guildId !== GUILD_ID || !staffMember.roles.cache.has(STAFF_ROLE_ID)) {
-                return interaction.reply({ content: 'Bu işlem yalnızca Gakuran yetkilileri tarafından yapılabilir.', flags: MessageFlags.Ephemeral });
+                return interaction.reply({ content: 'Bu iÅŸlem yalnÄ±zca Gakuran yetkilileri tarafÄ±ndan yapÄ±labilir.', flags: MessageFlags.Ephemeral });
             }
 
             const modal = new ModalBuilder()
                 .setCustomId('gakuran_mac_modal')
-                .setTitle('Gakuran Maç Sonucu');
+                .setTitle('Gakuran MaÃ§ Sonucu');
 
             const winnerInput = new TextInputBuilder()
                 .setCustomId('kazanan')
-                .setLabel('Kazananın Gakuran ismi')
-                .setPlaceholder('Kazanan oyuncunun kayıtlı adı')
+                .setLabel('KazananÄ±n Gakuran ismi')
+                .setPlaceholder('Kazanan oyuncunun kayÄ±tlÄ± adÄ±')
                 .setStyle(TextInputStyle.Short)
                 .setMinLength(2)
                 .setMaxLength(20)
@@ -594,7 +629,7 @@ client.on(Events.InteractionCreate, async interaction => {
             const loserInput = new TextInputBuilder()
                 .setCustomId('kaybeden')
                 .setLabel('Kaybedenin Gakuran ismi')
-                .setPlaceholder('Kaybeden oyuncunun kayıtlı adı')
+                .setPlaceholder('Kaybeden oyuncunun kayÄ±tlÄ± adÄ±')
                 .setStyle(TextInputStyle.Short)
                 .setMinLength(2)
                 .setMaxLength(20)
@@ -607,20 +642,20 @@ client.on(Events.InteractionCreate, async interaction => {
             return interaction.showModal(modal);
         }
 
-        // MAÇ SONUCUNU KAYDET: kazanana +15, kaybedene -15
+        // MAÃ‡ SONUCUNU KAYDET: kazanana +15, kaybedene -15
         if (interaction.isModalSubmit() && interaction.customId === 'gakuran_mac_modal') {
             const staffMember = interaction.inGuild()
                 ? await interaction.guild.members.fetch(interaction.user.id).catch(() => null)
                 : null;
             if (!staffMember || interaction.guildId !== GUILD_ID || !staffMember.roles.cache.has(STAFF_ROLE_ID)) {
-                return interaction.reply({ content: 'Bu işlem yalnızca Gakuran yetkilileri tarafından yapılabilir.', flags: MessageFlags.Ephemeral });
+                return interaction.reply({ content: 'Bu iÅŸlem yalnÄ±zca Gakuran yetkilileri tarafÄ±ndan yapÄ±labilir.', flags: MessageFlags.Ephemeral });
             }
 
             const winnerName = interaction.fields.getTextInputValue('kazanan').trim();
             const loserName = interaction.fields.getTextInputValue('kaybeden').trim();
 
             if (winnerName.toLocaleLowerCase('tr-TR') === loserName.toLocaleLowerCase('tr-TR')) {
-                return interaction.reply({ content: 'Kazanan ve kaybeden farklı oyuncular olmalı.', flags: MessageFlags.Ephemeral });
+                return interaction.reply({ content: 'Kazanan ve kaybeden farklÄ± oyuncular olmalÄ±.', flags: MessageFlags.Ephemeral });
             }
 
             const dbClient = await pool.connect();
@@ -639,7 +674,7 @@ client.on(Events.InteractionCreate, async interaction => {
 
                 if (!winnerResult.rowCount || !loserResult.rowCount) {
                     await dbClient.query('ROLLBACK');
-                    return interaction.reply({ content: 'Oyunculardan biri bulunamadı. İsimleri tablodaki Gakuran isimleriyle aynı yaz.', flags: MessageFlags.Ephemeral });
+                    return interaction.reply({ content: 'Oyunculardan biri bulunamadÄ±. Ä°simleri tablodaki Gakuran isimleriyle aynÄ± yaz.', flags: MessageFlags.Ephemeral });
                 }
 
                 winner = winnerResult.rows[0];
@@ -647,7 +682,7 @@ client.on(Events.InteractionCreate, async interaction => {
 
                 if (winner.discord_id === loser.discord_id) {
                     await dbClient.query('ROLLBACK');
-                    return interaction.reply({ content: 'Kazanan ve kaybeden farklı oyuncular olmalı.', flags: MessageFlags.Ephemeral });
+                    return interaction.reply({ content: 'Kazanan ve kaybeden farklÄ± oyuncular olmalÄ±.', flags: MessageFlags.Ephemeral });
                 }
 
                 await dbClient.query('UPDATE gakuran_players SET elo = elo + 15 WHERE discord_id = $1', [winner.discord_id]);
@@ -662,7 +697,7 @@ client.on(Events.InteractionCreate, async interaction => {
 
             await gakuranLeaderboardGuncelle();
             return interaction.reply({
-                content: `✅ Maç sonucu kaydedildi!\n🏆 Kazanan: **${winner.roblox_username}** (+15 Elo)\n📉 Kaybeden: **${loser.roblox_username}** (-15 Elo)\nNegatif Elo mümkündür.`,
+                content: `âœ… MaÃ§ sonucu kaydedildi!\nğŸ† Kazanan: **${winner.roblox_username}** (+15 Elo)\nğŸ“‰ Kaybeden: **${loser.roblox_username}** (-15 Elo)\nNegatif Elo mÃ¼mkÃ¼ndÃ¼r.`,
                 flags: MessageFlags.Ephemeral
             });
         }
@@ -670,15 +705,15 @@ client.on(Events.InteractionCreate, async interaction => {
         // KAYIT OL: modal ac
         if (interaction.isButton() && interaction.customId === 'gakuran_kayit') {
             if (!interaction.inGuild() || interaction.guildId !== GUILD_ID) {
-                return interaction.reply({ content: 'Bu buton yalnızca Gakuran sunucusunda kullanılabilir.', flags: MessageFlags.Ephemeral });
+                return interaction.reply({ content: 'Bu buton yalnÄ±zca Gakuran sunucusunda kullanÄ±labilir.', flags: MessageFlags.Ephemeral });
             }
             if (interaction.channelId !== LEADERBOARD_CHANNEL_ID) {
-                return interaction.reply({ content: 'Kayıt işlemini liderlik tablosu kanalındaki butondan başlat.', flags: MessageFlags.Ephemeral });
+                return interaction.reply({ content: 'KayÄ±t iÅŸlemini liderlik tablosu kanalÄ±ndaki butondan baÅŸlat.', flags: MessageFlags.Ephemeral });
             }
 
             const modal = new ModalBuilder()
                 .setCustomId('gakuran_kayit_modal')
-                .setTitle('Gakuran Oyuncu Kaydı');
+                .setTitle('Gakuran Oyuncu KaydÄ±');
             const robloxInput = new TextInputBuilder()
                 .setCustomId('roblox_username')
                 .setLabel('Gakuran ismin')
@@ -691,31 +726,31 @@ client.on(Events.InteractionCreate, async interaction => {
             return interaction.showModal(modal);
         }
 
-        // LEADERBOARD YENİLE
+        // LEADERBOARD YENÄ°LE
         if (interaction.isButton() && interaction.customId === 'gakuran_yenile') {
             if (!interaction.inGuild() || interaction.guildId !== GUILD_ID || interaction.channelId !== LEADERBOARD_CHANNEL_ID) {
-                return interaction.reply({ content: 'Bu buton yalnızca Gakuran liderlik tablosu kanalında kullanılabilir.', flags: MessageFlags.Ephemeral });
+                return interaction.reply({ content: 'Bu buton yalnÄ±zca Gakuran liderlik tablosu kanalÄ±nda kullanÄ±labilir.', flags: MessageFlags.Ephemeral });
             }
             await interaction.deferUpdate();
             await interaction.message.edit(await gakuranLeaderboardVerisi());
             return;
         }
 
-        // KAYIT FORMU GÖNDERİLDİ
+        // KAYIT FORMU GÃ–NDERÄ°LDÄ°
         if (interaction.isModalSubmit() && interaction.customId === 'gakuran_kayit_modal') {
             if (!interaction.inGuild() || interaction.guildId !== GUILD_ID) {
-                return interaction.reply({ content: 'Bu kayıt formu bu sunucuda kullanılamaz.', flags: MessageFlags.Ephemeral });
+                return interaction.reply({ content: 'Bu kayÄ±t formu bu sunucuda kullanÄ±lamaz.', flags: MessageFlags.Ephemeral });
             }
 
             const gakuranName = interaction.fields.getTextInputValue('roblox_username').trim();
             if (!/^[\p{L}\p{N}_ ]{2,20}$/u.test(gakuranName)) {
-                return interaction.reply({ content: 'Gakuran ismi 2-20 karakter olmalı; Türkçe harfler, harfler, rakamlar, boşluk ve _ kullanabilirsin.', flags: MessageFlags.Ephemeral });
+                return interaction.reply({ content: 'Gakuran ismi 2-20 karakter olmalÄ±; TÃ¼rkÃ§e harfler, harfler, rakamlar, boÅŸluk ve _ kullanabilirsin.', flags: MessageFlags.Ephemeral });
             }
             const robloxUsername = gakuranName;
 
             const player = await pool.query('SELECT discord_id FROM gakuran_players WHERE discord_id = $1', [interaction.user.id]);
             if (player.rowCount) {
-                return interaction.reply({ content: 'Zaten Gakuran sistemine kayıtlısın.', flags: MessageFlags.Ephemeral });
+                return interaction.reply({ content: 'Zaten Gakuran sistemine kayÄ±tlÄ±sÄ±n.', flags: MessageFlags.Ephemeral });
             }
 
             let registration;
@@ -727,7 +762,7 @@ client.on(Events.InteractionCreate, async interaction => {
                 );
             } catch (error) {
                 if (error.code === '23505') {
-                    return interaction.reply({ content: 'Zaten bekleyen bir kayıt başvurun var.', flags: MessageFlags.Ephemeral });
+                    return interaction.reply({ content: 'Zaten bekleyen bir kayÄ±t baÅŸvurun var.', flags: MessageFlags.Ephemeral });
                 }
                 throw error;
             }
@@ -735,16 +770,16 @@ client.on(Events.InteractionCreate, async interaction => {
             const applicationChannel = await client.channels.fetch(APPLICATION_CHANNEL_ID).catch(() => null);
             if (!applicationChannel || !applicationChannel.isTextBased() || !applicationChannel.guild || applicationChannel.guild.id !== GUILD_ID) {
                 await pool.query("UPDATE gakuran_registrations SET status = 'rejected' WHERE id = $1", [registration.rows[0].id]);
-                return interaction.reply({ content: 'Başvuru kanalı bulunamadı. Yetkililere haber ver.', flags: MessageFlags.Ephemeral });
+                return interaction.reply({ content: 'BaÅŸvuru kanalÄ± bulunamadÄ±. Yetkililere haber ver.', flags: MessageFlags.Ephemeral });
             }
 
             const appEmbed = new EmbedBuilder()
                 .setColor(0xD4AF37)
-                .setTitle('Yeni Gakuran Kayıt Başvurusu')
+                .setTitle('Yeni Gakuran KayÄ±t BaÅŸvurusu')
                 .addFields(
                     { name: 'Discord', value: `${interaction.user.tag} (<@${interaction.user.id}>)` },
                     { name: 'Gakuran ismi', value: robloxUsername },
-                    { name: 'Başvuru ID', value: String(registration.rows[0].id) }
+                    { name: 'BaÅŸvuru ID', value: String(registration.rows[0].id) }
                 )
                 .setTimestamp();
             const appButtons = new ActionRowBuilder().addComponents(
@@ -758,25 +793,25 @@ client.on(Events.InteractionCreate, async interaction => {
                 await pool.query("UPDATE gakuran_registrations SET status = 'rejected' WHERE id = $1", [registration.rows[0].id]);
                 throw error;
             }
-            return interaction.reply({ content: 'Başvurun yetkililere gönderildi. Onaylandığında kayıt tamamlanacak.', flags: MessageFlags.Ephemeral });
+            return interaction.reply({ content: 'BaÅŸvurun yetkililere gÃ¶nderildi. OnaylandÄ±ÄŸÄ±nda kayÄ±t tamamlanacak.', flags: MessageFlags.Ephemeral });
         }
 
-        // YETKİLİ BAŞVURU ONAY / RED
+        // YETKÄ°LÄ° BAÅVURU ONAY / RED
         if (interaction.isButton() && (interaction.customId.startsWith('gakuran_onayla_') || interaction.customId.startsWith('gakuran_reddet_'))) {
             const staffMember = interaction.inGuild() ? await interaction.guild.members.fetch(interaction.user.id).catch(() => null) : null;
             if (!staffMember || interaction.guildId !== GUILD_ID || !staffMember.roles.cache.has(STAFF_ROLE_ID)) {
-                return interaction.reply({ content: 'Bu işlem yalnızca yetkililer tarafından yapılabilir.', flags: MessageFlags.Ephemeral });
+                return interaction.reply({ content: 'Bu iÅŸlem yalnÄ±zca yetkililer tarafÄ±ndan yapÄ±labilir.', flags: MessageFlags.Ephemeral });
             }
 
             const approve = interaction.customId.startsWith('gakuran_onayla_');
             const registrationId = interaction.customId.slice(approve ? 'gakuran_onayla_'.length : 'gakuran_reddet_'.length);
             if (!/^\d+$/.test(registrationId)) {
-                return interaction.reply({ content: 'Başvuru numarası geçersiz.', flags: MessageFlags.Ephemeral });
+                return interaction.reply({ content: 'BaÅŸvuru numarasÄ± geÃ§ersiz.', flags: MessageFlags.Ephemeral });
             }
 
             const result = await pool.query("SELECT * FROM gakuran_registrations WHERE id = $1 AND status = 'pending'", [registrationId]);
             if (!result.rowCount) {
-                return interaction.reply({ content: 'Bu başvuru artık beklemede değil veya bulunamadı.', flags: MessageFlags.Ephemeral });
+                return interaction.reply({ content: 'Bu baÅŸvuru artÄ±k beklemede deÄŸil veya bulunamadÄ±.', flags: MessageFlags.Ephemeral });
             }
             const reg = result.rows[0];
 
@@ -784,7 +819,7 @@ client.on(Events.InteractionCreate, async interaction => {
                 const duplicate = await pool.query('SELECT discord_id FROM gakuran_players WHERE discord_id = $1 OR LOWER(roblox_username) = LOWER($2)', [reg.discord_id, reg.roblox_username]);
                 if (duplicate.rowCount) {
                     await pool.query("UPDATE gakuran_registrations SET status = 'rejected' WHERE id = $1", [registrationId]);
-                    await interaction.update({ content: 'Başvuru reddedildi: Discord hesabı veya Gakuran ismi zaten kayıtlı.', embeds: interaction.message.embeds, components: [] });
+                    await interaction.update({ content: 'BaÅŸvuru reddedildi: Discord hesabÄ± veya Gakuran ismi zaten kayÄ±tlÄ±.', embeds: interaction.message.embeds, components: [] });
                     return;
                 }
                 const dbClient = await pool.connect();
@@ -799,31 +834,31 @@ client.on(Events.InteractionCreate, async interaction => {
                 } finally {
                     dbClient.release();
                 }
-                await interaction.update({ content: `Başvuru ${interaction.user.tag} tarafından onaylandı.`, embeds: interaction.message.embeds, components: [] });
+                await interaction.update({ content: `BaÅŸvuru ${interaction.user.tag} tarafÄ±ndan onaylandÄ±.`, embeds: interaction.message.embeds, components: [] });
                 await gakuranLeaderboardGuncelle();
                 const applicant = await client.users.fetch(reg.discord_id).catch(() => null);
-                if (applicant) await applicant.send(`Gakuran kaydın onaylandı! Gakuran ismin: ${reg.roblox_username}`).catch(() => {});
+                if (applicant) await applicant.send(`Gakuran kaydÄ±n onaylandÄ±! Gakuran ismin: ${reg.roblox_username}`).catch(() => {});
                 return;
             }
 
             await pool.query("UPDATE gakuran_registrations SET status = 'rejected' WHERE id = $1", [registrationId]);
-            await interaction.update({ content: `Başvuru ${interaction.user.tag} tarafından reddedildi.`, embeds: interaction.message.embeds, components: [] });
+            await interaction.update({ content: `BaÅŸvuru ${interaction.user.tag} tarafÄ±ndan reddedildi.`, embeds: interaction.message.embeds, components: [] });
             const applicant = await client.users.fetch(reg.discord_id).catch(() => null);
-            if (applicant) await applicant.send('Gakuran kayıt başvurun reddedildi. Gerekirse yetkililerle iletişime geçebilirsin.').catch(() => {});
+            if (applicant) await applicant.send('Gakuran kayÄ±t baÅŸvurun reddedildi. Gerekirse yetkililerle iletiÅŸime geÃ§ebilirsin.').catch(() => {});
         }
     } catch (error) {
-        console.error('Gakuran interaction hatası:', error);
+        console.error('Gakuran interaction hatasÄ±:', error);
         if (interaction.isRepliable() && !interaction.replied && !interaction.deferred) {
-            await interaction.reply({ content: 'İşlem sırasında hata oluştu. Yetkililer Render Logs bölümünü kontrol etsin.', flags: MessageFlags.Ephemeral }).catch(() => {});
+            await interaction.reply({ content: 'Ä°ÅŸlem sÄ±rasÄ±nda hata oluÅŸtu. Yetkililer Render Logs bÃ¶lÃ¼mÃ¼nÃ¼ kontrol etsin.', flags: MessageFlags.Ephemeral }).catch(() => {});
         }
     }
 });
 
 // HATALAR
 client.on(Events.Error, error => {
-    console.error('Discord istemci hatası:', error);
+    console.error('Discord istemci hatasÄ±:', error);
 });
 
 client.login(TOKEN).catch(error => {
-    console.error('Discord girişi başarısız:', error.message);
+    console.error('Discord giriÅŸi baÅŸarÄ±sÄ±z:', error.message);
 });
