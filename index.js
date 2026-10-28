@@ -18,6 +18,7 @@ const {
 } = require('@discordjs/voice');
 
 const express = require('express');
+const { Pool } = require('pg');
 
 // PREFIX DOSYASI
 const PREFIX_FILE = path.join(__dirname, 'prefix.json');
@@ -65,6 +66,14 @@ app.listen(PORT, '0.0.0.0', () => {
 
 // GIZLI TOKEN
 const TOKEN = process.env.TOKEN;
+const DATABASE_URL = process.env.DATABASE_URL;
+
+const pool = new Pool({
+    connectionString: DATABASE_URL,
+    ssl: DATABASE_URL?.includes('localhost')
+        ? false
+        : { rejectUnauthorized: false }
+});
 
 // DISCORD ID'LERI
 const GUILD_ID = '1563977216713429045';
