@@ -74,6 +74,43 @@ const pool = new Pool({
         ? false
         : { rejectUnauthorized: false }
 });
+// GAKURAN VERITABANI TABLOLARI
+async function gakuranTablolariniOlustur() {
+    if (!DATABASE_URL) {
+        throw new Error('DATABASE_URL ayarlanmamis!');
+    }
+
+    await pool.query(`
+        CREATE TABLE IF NOT EXISTS gakuran_players (
+            discord_id TEXT PRIMARY KEY,
+            discord_tag TEXT NOT NULL,
+            roblox_username TEXT NOT NULL,
+            elo INTEGER NOT NULL DEFAULT 0,
+            approved_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        );
+    `);
+
+    await pool.query(`
+        CREATE TABLE IF NOT EXISTS gakuran_registrations (
+            id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+            discord_id TEXT NOT NULL,
+            discord_tag TEXT NOT NULL,
+            roblox_username TEXT NOT NULL,
+            status TEXT NOT NULL DEFAULT 'pending'
+                CHECK (status IN ('pending', 'approved', 'rejected')),
+            submitted_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        );
+    `);
+
+    await pool.query(`
+        CREATE UNIQUE INDEX IF NOT EXISTS
+        gakuran_one_pending_registration
+        ON gakuran_registrations (discord_id)
+        WHERE status = 'pending';
+    `);
+
+    console.log('Gakuran veritabani tablolari hazir!');
+}
 
 // DISCORD ID'LERI
 const GUILD_ID = '1563977216713429045';
@@ -175,6 +212,13 @@ async function sesKanalinaBaglan() {
 client.once(Events.ClientReady, async readyClient => {
     console.log(`${readyClient.user.tag} olarak giris yapildi!`);
     console.log(`Aktif prefix: ${PREFIX}`);
+
+    try {
+        await gakuranTablolariniOlustur();
+        console.log('Gakuran sistemi veritabanina baglandi!');
+    } catch (error) {
+        console.error('Gakuran veritabani hatasi:', error.message);
+    }
 
     await sesKanalinaBaglan();
 });
