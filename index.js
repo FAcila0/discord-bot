@@ -124,6 +124,18 @@ async function gakuranTablolariniOlustur() {
         WHERE status = 'pending';
     `);
 
+    
+    await pool.query(`
+        CREATE TABLE IF NOT EXISTS gakuran_match_history (
+            id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+            winner_discord_id TEXT NOT NULL,
+            winner_name TEXT NOT NULL,
+            loser_discord_id TEXT NOT NULL,
+            loser_name TEXT NOT NULL,
+            played_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        );
+    `);
+
     console.log('Gakuran veritabanı tabloları hazır!');
 }
 
@@ -170,6 +182,80 @@ async function gakuranLeaderboardGonder(channel) {
 
 // Var olan liderlik tablosunu düzenle; her işlemde yeni mesaj oluşturma.
 async function gakuranLeaderboardGuncelle() {
+    
+const MAC_GECMISI_BASLIK = '📜 GAKURAN MAÇ GEÇMİŞİ';
+
+async function gakuranMacGecmisiVerisi() {
+    // Son 60 maçı al; ekranda en eski üstte,
+    // en yeni en altta görünecek.
+    const sonuc = await pool.query(`
+        SELECT winner_name, loser_name, played_at
+        FROM gakuran_match_history
+        ORDER BY id DESC
+        LIMIT 60
+    `);
+
+    const maclar = sonuc.rows.reverse();
+
+    const satirlar = maclar.map((mac, index) => {
+        const tarih = new Date(mac.played_at).toLocaleString('tr-TR', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            timeZone: 'Europe/Istanbul'
+        });
+
+        return `**${index + 1}.** 🟢 WIN  ${mac.winner_name} — ${mac.loser_name}  🔴 LOSS`;
+    });
+
+    const aciklama = satirlar.length
+        ? satirlar.join('\n')
+        : '_Henüz kaydedilmiş maç yok._';
+
+    const embed = new EmbedBuilder()
+        .setColor(0xD4AF37)
+        .setTitle(MAC_GECMISI_BASLIK)
+        .setDescription(aciklama)
+        .setFooter({
+            text: 'En yeni maç en altta • Son 60 maç gösterilir'
+        })
+        .setTimestamp();
+
+    return { embeds: [embed] };
+}
+
+async function gakuranMacGecmisiGuncelle() {
+    const channel = await client.channels
+        .fetch(LEADERBOARD_CHANNEL_ID)
+        .catch(() => null);
+
+    if (!channel || !channel.isTextBased() ||
+        !('messages' in channel) || !('send' in channel)) {
+        throw new Error('Maç geçmişi kanalı bulunamadı.');
+    }
+
+    const messages = await channel.messages
+        .fetch({ limit: 50 })
+        .catch(() => null);
+
+    const existing = messages?.find(message =>
+        message.author.id === client.user.id &&
+        message.embeds.some(embed =>
+            embed.title === MAC_GECMISI_BASLIK
+        )
+    );
+
+    const veri = await gakuranMacGecmisiVerisi();
+
+    if (existing) {
+        await existing.edit(veri);
+    } else {
+        await channel.send(veri);
+    }
+}
+
     const channel = await client.channels.fetch(LEADERBOARD_CHANNEL_ID).catch(() => null);
     if (!channel || !channel.isTextBased()) {
         throw new Error('Liderlik tablosu kanalı bulunamadı.');
@@ -612,6 +698,7 @@ client.on(Events.InteractionCreate, async interaction => {
                 return interaction.reply({ content: `❌ "${playerName}" isimli kayıtlı oyuncu bulunamadı.`, flags: MessageFlags.Ephemeral });
             }
             await gakuranLeaderboardGuncelle();
+            await gakuranMacGecmisiGuncelle();
             return interaction.reply({ content: `✅ **${deleted.rows[0].roblox_username}** oyuncusu puan tablosundan silindi.`, flags: MessageFlags.Ephemeral });
         }
 
@@ -836,9 +923,35 @@ client.on(Events.InteractionCreate, async interaction => {
                 const dbClient = await pool.connect();
                 try {
                     await dbClient.query('BEGIN');
-                    await dbClient.query('INSERT INTO gakuran_players (discord_id, discord_tag, roblox_username, elo) VALUES ($1, $2, $3, 0)', [reg.discord_id, reg.discord_tag, reg.roblox_username]);
-                    await dbClient.query("UPDATE gakuran_registrations SET status = 'approved' WHERE id = $1", [registrationId]);
-                    await dbClient.query('COMMIT');
+                    
+await dbClient.query(
+    'UPDATE gakuran_players SET elo = elo + 15 WHERE discord_id = $1',
+    [winner.discord_id]
+);
+
+await dbClient.query(
+    'UPDATE gakuran_players SET elo = elo - 15 WHERE discord_id = $1',
+    [loser.discord_id]
+);
+
+// Maç geçmişini de puanlarla aynı işlemde kaydet.
+await dbClient.query(`
+    INSERT INTO gakuran_match_history (
+        winner_discord_id,
+        winner_name,
+        loser_discord_id,
+        loser_name
+    )
+    VALUES ($1, $2, $3, $4)
+`, [
+    winner.discord_id,
+    winner.roblox_username,
+    loser.discord_id,
+    loser.roblox_username
+]);
+
+await dbClient.query('COMMIT');
+
                 } catch (error) {
                     await dbClient.query('ROLLBACK');
                     throw error;
