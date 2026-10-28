@@ -331,72 +331,43 @@ if (message.content === `${PREFIX}gakuran-kur`) {
 
     if (!command) return;
 
-    // GAKURAN MAC SONUCU: yetkililer icin modal ac
-    if (command === 'gakuran-mac') {
+    // YARDIM: mevcut komutlar ve kullanımları
+    if (command === 'yardım' || command === 'yardim' || command === 'help') {
+        const helpEmbed = new EmbedBuilder()
+            .setColor(0xD4AF37)
+            .setTitle('📖 Bot Komutları')
+            .setDescription(`Aktif prefix: \`${PREFIX}\``)
+            .addFields(
+                { name: `${PREFIX}yardım`, value: 'Bu komut listesini gösterir.' },
+                { name: `${PREFIX}gakuran-kur`, value: 'Yetkililer: mevcut Elo tablosunu günceller.' },
+                { name: `${PREFIX}gakuran-mac`, value: 'Yetkililer: maç sonucu girme ve Elo güncelleme butonlarını gösterir.' },
+                { name: `${PREFIX}gakuran-oyuncu-sil`, value: 'Yetkililer: oyuncu silme butonunu gösterir; oyuncu adı formdan girilir.' },
+                { name: `${PREFIX}duyuru <mesaj>`, value: 'Duyuru kanalına duyuru gönderir.' },
+                { name: `${PREFIX}sil <1-100>`, value: 'Mesajları siler; Mesajları Yönet izni gerekir.' },
+                { name: `${PREFIX}prefix <yeni>`, value: 'Sunucu prefixini değiştirir; yönetici izni gerekir.' }
+            )
+            .setFooter({ text: 'Gakuran botu' });
+        return message.reply({ embeds: [helpEmbed] });
+    }
+
+    // MAC BUTONLARI: yetkililer için maç sonucu veya oyuncu silme işlemi
+    if (command === 'gakuran-mac' || command === 'gakuran-oyuncu-sil') {
         if (message.guild.id !== GUILD_ID || !message.member.roles.cache.has(STAFF_ROLE_ID)) {
             return message.reply('❌ Bu komut yalnızca Gakuran yetkilileri içindir.');
         }
-
-        const modal = new ModalBuilder()
-            .setCustomId('gakuran_mac_modal')
-            .setTitle('Gakuran Maç Sonucu');
-
-        const winnerInput = new TextInputBuilder()
-            .setCustomId('kazanan')
-            .setLabel('Kazananın Gakuran ismi')
-            .setPlaceholder('Örn. OyuncuA')
-            .setStyle(TextInputStyle.Short)
-            .setMinLength(2)
-            .setMaxLength(20)
-            .setRequired(true);
-
-        const loserInput = new TextInputBuilder()
-            .setCustomId('kaybeden')
-            .setLabel('Kaybedenin Gakuran ismi')
-            .setPlaceholder('Örn. OyuncuB')
-            .setStyle(TextInputStyle.Short)
-            .setMinLength(2)
-            .setMaxLength(20)
-            .setRequired(true);
-
-        modal.addComponents(
-            new ActionRowBuilder().addComponents(winnerInput),
-            new ActionRowBuilder().addComponents(loserInput)
-        );
-
-        // Discord modalını bir mesaj komutundan doğrudan açmak mümkün değil.
-        // Komutu kullanana formu açacak buton gönderilir.
         const row = new ActionRowBuilder().addComponents(
             new ButtonBuilder()
                 .setCustomId('gakuran_mac_formu')
                 .setLabel('Maç sonucu gir')
                 .setStyle(ButtonStyle.Primary)
+                .setEmoji('🏆'),
+            new ButtonBuilder()
+                .setCustomId('gakuran_oyuncu_sil_formu')
+                .setLabel('Oyuncu sil')
+                .setStyle(ButtonStyle.Danger)
+                .setEmoji('🗑️')
         );
-        return message.reply({ content: 'Maç sonucunu girmek için butona bas:', components: [row] });
-    }
-
-    // GAKURAN OYUNCU SILME: !gakuran-oyuncu-sil <Gakuran ismi>
-    if (command === 'gakuran-oyuncu-sil') {
-        if (message.guild.id !== GUILD_ID || !message.member.roles.cache.has(STAFF_ROLE_ID)) {
-            return message.reply('❌ Bu komut yalnızca Gakuran yetkilileri içindir.');
-        }
-
-        const playerName = args.join(' ').trim();
-        if (!playerName) {
-            return message.reply(`Kullanım: ${PREFIX}gakuran-oyuncu-sil <Gakuran ismi>`);
-        }
-
-        const deleted = await pool.query(
-            'DELETE FROM gakuran_players WHERE LOWER(roblox_username) = LOWER($1) RETURNING discord_id, roblox_username',
-            [playerName]
-        );
-
-        if (!deleted.rowCount) {
-            return message.reply(`❌ "${playerName}" isimli kayıtlı oyuncu bulunamadı.`);
-        }
-
-        await gakuranLeaderboardGuncelle();
-        return message.reply(`✅ **${deleted.rows[0].roblox_username}** oyuncusu Gakuran Elo tablosundan silindi.`);
+        return message.reply({ content: 'İşlem yapmak için bir buton seç:', components: [row] });
     }
 
     // PREFIX DEGISTIR
@@ -555,6 +526,49 @@ if (message.content === `${PREFIX}gakuran-kur`) {
 // GAKURAN BUTONLARI VE BAŞVURU İŞLEMLERİ
 client.on(Events.InteractionCreate, async interaction => {
     try {
+        // OYUNCU SİLME FORMUNU AÇ
+        if (interaction.isButton() && interaction.customId === 'gakuran_oyuncu_sil_formu') {
+            const staffMember = interaction.inGuild()
+                ? await interaction.guild.members.fetch(interaction.user.id).catch(() => null)
+                : null;
+            if (!staffMember || interaction.guildId !== GUILD_ID || !staffMember.roles.cache.has(STAFF_ROLE_ID)) {
+                return interaction.reply({ content: 'Bu işlem yalnızca Gakuran yetkilileri tarafından yapılabilir.', flags: MessageFlags.Ephemeral });
+            }
+            const modal = new ModalBuilder()
+                .setCustomId('gakuran_oyuncu_sil_modal')
+                .setTitle('Gakuran Oyuncu Sil');
+            const nameInput = new TextInputBuilder()
+                .setCustomId('oyuncu_ismi')
+                .setLabel('Silinecek Gakuran oyuncu ismi')
+                .setPlaceholder('Tablodaki oyuncu adını yaz')
+                .setStyle(TextInputStyle.Short)
+                .setMinLength(2)
+                .setMaxLength(30)
+                .setRequired(true);
+            modal.addComponents(new ActionRowBuilder().addComponents(nameInput));
+            return interaction.showModal(modal);
+        }
+
+        // OYUNCU SİLME FORMU GÖNDERİLDİ
+        if (interaction.isModalSubmit() && interaction.customId === 'gakuran_oyuncu_sil_modal') {
+            const staffMember = interaction.inGuild()
+                ? await interaction.guild.members.fetch(interaction.user.id).catch(() => null)
+                : null;
+            if (!staffMember || interaction.guildId !== GUILD_ID || !staffMember.roles.cache.has(STAFF_ROLE_ID)) {
+                return interaction.reply({ content: 'Bu işlem yalnızca Gakuran yetkilileri tarafından yapılabilir.', flags: MessageFlags.Ephemeral });
+            }
+            const playerName = interaction.fields.getTextInputValue('oyuncu_ismi').trim();
+            const deleted = await pool.query(
+                'DELETE FROM gakuran_players WHERE LOWER(roblox_username) = LOWER($1) RETURNING discord_id, roblox_username',
+                [playerName]
+            );
+            if (!deleted.rowCount) {
+                return interaction.reply({ content: `❌ "${playerName}" isimli kayıtlı oyuncu bulunamadı.`, flags: MessageFlags.Ephemeral });
+            }
+            await gakuranLeaderboardGuncelle();
+            return interaction.reply({ content: `✅ **${deleted.rows[0].roblox_username}** oyuncusu Elo tablosundan silindi.`, flags: MessageFlags.Ephemeral });
+        }
+
         // MAÇ FORMUNU AÇ
         if (interaction.isButton() && interaction.customId === 'gakuran_mac_formu') {
             const staffMember = interaction.inGuild()
