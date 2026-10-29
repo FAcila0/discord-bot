@@ -124,7 +124,6 @@ async function gakuranTablolariniOlustur() {
         WHERE status = 'pending';
     `);
 
-    
     await pool.query(`
         CREATE TABLE IF NOT EXISTS gakuran_match_history (
             id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -182,80 +181,6 @@ async function gakuranLeaderboardGonder(channel) {
 
 // Var olan liderlik tablosunu düzenle; her işlemde yeni mesaj oluşturma.
 async function gakuranLeaderboardGuncelle() {
-    
-const MAC_GECMISI_BASLIK = '📜 GAKURAN MAÇ GEÇMİŞİ';
-
-async function gakuranMacGecmisiVerisi() {
-    // Son 60 maçı al; ekranda en eski üstte,
-    // en yeni en altta görünecek.
-    const sonuc = await pool.query(`
-        SELECT winner_name, loser_name, played_at
-        FROM gakuran_match_history
-        ORDER BY id DESC
-        LIMIT 60
-    `);
-
-    const maclar = sonuc.rows.reverse();
-
-    const satirlar = maclar.map((mac, index) => {
-        const tarih = new Date(mac.played_at).toLocaleString('tr-TR', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-            timeZone: 'Europe/Istanbul'
-        });
-
-        return `**${index + 1}.** 🟢 WIN  ${mac.winner_name} — ${mac.loser_name}  🔴 LOSS`;
-    });
-
-    const aciklama = satirlar.length
-        ? satirlar.join('\n')
-        : '_Henüz kaydedilmiş maç yok._';
-
-    const embed = new EmbedBuilder()
-        .setColor(0xD4AF37)
-        .setTitle(MAC_GECMISI_BASLIK)
-        .setDescription(aciklama)
-        .setFooter({
-            text: 'En yeni maç en altta • Son 60 maç gösterilir'
-        })
-        .setTimestamp();
-
-    return { embeds: [embed] };
-}
-
-async function gakuranMacGecmisiGuncelle() {
-    const channel = await client.channels
-        .fetch(LEADERBOARD_CHANNEL_ID)
-        .catch(() => null);
-
-    if (!channel || !channel.isTextBased() ||
-        !('messages' in channel) || !('send' in channel)) {
-        throw new Error('Maç geçmişi kanalı bulunamadı.');
-    }
-
-    const messages = await channel.messages
-        .fetch({ limit: 50 })
-        .catch(() => null);
-
-    const existing = messages?.find(message =>
-        message.author.id === client.user.id &&
-        message.embeds.some(embed =>
-            embed.title === MAC_GECMISI_BASLIK
-        )
-    );
-
-    const veri = await gakuranMacGecmisiVerisi();
-
-    if (existing) {
-        await existing.edit(veri);
-    } else {
-        await channel.send(veri);
-    }
-}
-
     const channel = await client.channels.fetch(LEADERBOARD_CHANNEL_ID).catch(() => null);
     if (!channel || !channel.isTextBased()) {
         throw new Error('Liderlik tablosu kanalı bulunamadı.');
@@ -275,6 +200,50 @@ async function gakuranMacGecmisiGuncelle() {
     } else {
         await channel.send(await gakuranLeaderboardVerisi());
     }
+}
+
+// MAÇ GEÇMİŞİ: puan tablosuyla aynı kanalda, ayrı bir mesajda tutulur.
+const MAC_GECMISI_BASLIK = '📜 GAKURAN MAÇ GEÇMİŞİ';
+
+async function gakuranMacGecmisiVerisi() {
+    // En son 60 maçı alıp ters çeviriyoruz: en eski üstte, en yeni altta.
+    const sonuc = await pool.query(`
+        SELECT winner_name, loser_name, played_at
+        FROM gakuran_match_history
+        ORDER BY id DESC
+        LIMIT 60
+    `);
+
+    const maclar = sonuc.rows.reverse();
+    const satirlar = maclar.map((mac, index) =>
+        `**${index + 1}.** 🟢 WIN ${mac.winner_name} — ${mac.loser_name} 🔴 LOSS`
+    );
+
+    const embed = new EmbedBuilder()
+        .setColor(0xD4AF37)
+        .setTitle(MAC_GECMISI_BASLIK)
+        .setDescription(satirlar.length ? satirlar.join('\n') : '_Henüz kaydedilmiş maç yok._')
+        .setFooter({ text: 'En yeni maç en altta • Son 60 maç gösterilir' })
+        .setTimestamp();
+
+    return { embeds: [embed] };
+}
+
+async function gakuranMacGecmisiGuncelle() {
+    const channel = await client.channels.fetch(LEADERBOARD_CHANNEL_ID).catch(() => null);
+    if (!channel || !channel.isTextBased() || !('messages' in channel) || !('send' in channel)) {
+        throw new Error('Maç geçmişi kanalı bulunamadı veya metin kanalı değil.');
+    }
+
+    const messages = await channel.messages.fetch({ limit: 50 }).catch(() => null);
+    const existing = messages?.find(message =>
+        message.author.id === client.user.id &&
+        message.embeds.some(embed => embed.title === MAC_GECMISI_BASLIK)
+    );
+
+    const veri = await gakuranMacGecmisiVerisi();
+    if (existing) await existing.edit(veri);
+    else await channel.send(veri);
 }
 
 // DISCORD ID'LERİ
@@ -439,10 +408,10 @@ client.on(Events.MessageCreate, async message => {
                 { name: `${PREFIX}gakuran-kur`, value: 'Yetkililer: mevcut puan tablosunu günceller.' },
                 { name: `${PREFIX}gakuran-maç`, value: 'Yetkililer: maç sonucu girme ve puan güncelleme butonlarını gösterir.' },
                 { name: `${PREFIX}gakuran-oyuncu-sil`, value: 'Yetkililer: oyuncu silme butonunu gösterir; oyuncu adı formdan girilir.' },
-                { name: `${PREFIX}duyuru <mesaj>`, value: 'Duyuru kanalına duyuru gönderir.' },
-                { name: `${PREFIX}mesaj <kanal kimliği> <mesaj>`, value: 'Yetkililer: belirtilen kanala istediğin mesajı gönderir.' },
+                { name: `${PREFIX}duyuru \<mesaj>`, value: 'Duyuru kanalına duyuru gönderir.' },
+                { name: `${PREFIX}mesaj \<kanal kimliği> \<mesaj>`, value: 'Yetkililer: belirtilen kanala istediğin mesajı gönderir.' },
                 { name: `${PREFIX}sil <1-100>`, value: 'Mesajları siler; Mesajları Yönet izni gerekir.' },
-                { name: `${PREFIX}önek <yeni>`, value: 'Sunucu önekini değiştirir; yönetici izni gerekir.' }
+                { name: `${PREFIX}önek \<yeni>`, value: 'Sunucu önekini değiştirir; yönetici izni gerekir.' }
             )
             .setFooter({ text: 'Gakuran botu' });
         return message.reply({ embeds: [helpEmbed] });
@@ -479,7 +448,7 @@ client.on(Events.MessageCreate, async message => {
         const eslesme = komutVeDevami.match(/^(\d{17,20})\s+([\s\S]+)$/);
 
         if (!eslesme) {
-            return message.reply(`Kullanım: \`${PREFIX}mesaj <kanal kimliği> <mesaj>\`\nÖrnek: \`${PREFIX}mesaj 123456789012345678 Merhaba herkese!\``);
+            return message.reply(`Kullanım: \`${PREFIX}mesaj \<kanal kimliği> \<mesaj>\`\nÖrnek: \`${PREFIX}mesaj 123456789012345678 Merhaba herkese!\``);
         }
 
         const kanalID = eslesme[1];
@@ -785,6 +754,11 @@ client.on(Events.InteractionCreate, async interaction => {
 
                 await dbClient.query('UPDATE gakuran_players SET elo = elo + 15 WHERE discord_id = $1', [winner.discord_id]);
                 await dbClient.query('UPDATE gakuran_players SET elo = elo - 15 WHERE discord_id = $1', [loser.discord_id]);
+                await dbClient.query(`
+                    INSERT INTO gakuran_match_history (
+                        winner_discord_id, winner_name, loser_discord_id, loser_name
+                    ) VALUES ($1, $2, $3, $4)
+                `, [winner.discord_id, winner.roblox_username, loser.discord_id, loser.roblox_username]);
                 await dbClient.query('COMMIT');
             } catch (error) {
                 await dbClient.query('ROLLBACK').catch(() => {});
@@ -794,6 +768,7 @@ client.on(Events.InteractionCreate, async interaction => {
             }
 
             await gakuranLeaderboardGuncelle();
+            await gakuranMacGecmisiGuncelle();
             return interaction.reply({
                 content: `✅ Maç sonucu kaydedildi!\n🏆 Kazanan: **${winner.roblox_username}** (+15 Puan)\n📉 Kaybeden: **${loser.roblox_username}** (-15 Puan)\nNegatif puan mümkündür.`,
                 flags: MessageFlags.Ephemeral
@@ -907,9 +882,10 @@ client.on(Events.InteractionCreate, async interaction => {
                 return interaction.reply({ content: 'Başvuru numarası geçersiz.', flags: MessageFlags.Ephemeral });
             }
 
+            await interaction.deferUpdate();
             const result = await pool.query("SELECT * FROM gakuran_registrations WHERE id = $1 AND status = 'pending'", [registrationId]);
             if (!result.rowCount) {
-                return interaction.reply({ content: 'Bu başvuru artık beklemede değil veya bulunamadı.', flags: MessageFlags.Ephemeral });
+                return interaction.followUp({ content: 'Bu başvuru artık beklemede değil veya bulunamadı.', flags: MessageFlags.Ephemeral });
             }
             const reg = result.rows[0];
 
@@ -917,48 +893,29 @@ client.on(Events.InteractionCreate, async interaction => {
                 const duplicate = await pool.query('SELECT discord_id FROM gakuran_players WHERE discord_id = $1 OR LOWER(roblox_username) = LOWER($2)', [reg.discord_id, reg.roblox_username]);
                 if (duplicate.rowCount) {
                     await pool.query("UPDATE gakuran_registrations SET status = 'rejected' WHERE id = $1", [registrationId]);
-                    await interaction.update({ content: 'Başvuru reddedildi: Discord hesabı veya Gakuran ismi zaten kayıtlı.', embeds: interaction.message.embeds, components: [] });
+                    await interaction.message.edit({ content: 'Başvuru reddedildi: Discord hesabı veya Gakuran ismi zaten kayıtlı.', embeds: interaction.message.embeds, components: [] });
                     return;
                 }
+
                 const dbClient = await pool.connect();
                 try {
                     await dbClient.query('BEGIN');
-                    
-await dbClient.query(
-    'UPDATE gakuran_players SET elo = elo + 15 WHERE discord_id = $1',
-    [winner.discord_id]
-);
-
-await dbClient.query(
-    'UPDATE gakuran_players SET elo = elo - 15 WHERE discord_id = $1',
-    [loser.discord_id]
-);
-
-// Maç geçmişini de puanlarla aynı işlemde kaydet.
-await dbClient.query(`
-    INSERT INTO gakuran_match_history (
-        winner_discord_id,
-        winner_name,
-        loser_discord_id,
-        loser_name
-    )
-    VALUES ($1, $2, $3, $4)
-`, [
-    winner.discord_id,
-    winner.roblox_username,
-    loser.discord_id,
-    loser.roblox_username
-]);
-
-await dbClient.query('COMMIT');
-
+                    await dbClient.query(
+                        'INSERT INTO gakuran_players (discord_id, discord_tag, roblox_username, elo) VALUES ($1, $2, $3, 0)',
+                        [reg.discord_id, reg.discord_tag, reg.roblox_username]
+                    );
+                    await dbClient.query(
+                        "UPDATE gakuran_registrations SET status = 'approved' WHERE id = $1",
+                        [registrationId]
+                    );
+                    await dbClient.query('COMMIT');
                 } catch (error) {
-                    await dbClient.query('ROLLBACK');
+                    await dbClient.query('ROLLBACK').catch(() => {});
                     throw error;
                 } finally {
                     dbClient.release();
                 }
-                await interaction.update({ content: `Başvuru ${interaction.user.tag} tarafından onaylandı.`, embeds: interaction.message.embeds, components: [] });
+                await interaction.message.edit({ content: `Başvuru ${interaction.user.tag} tarafından onaylandı.`, embeds: interaction.message.embeds, components: [] });
                 await gakuranLeaderboardGuncelle();
                 const applicant = await client.users.fetch(reg.discord_id).catch(() => null);
                 if (applicant) await applicant.send(`Gakuran kaydın onaylandı! Gakuran ismin: ${reg.roblox_username}`).catch(() => {});
@@ -966,14 +923,20 @@ await dbClient.query('COMMIT');
             }
 
             await pool.query("UPDATE gakuran_registrations SET status = 'rejected' WHERE id = $1", [registrationId]);
-            await interaction.update({ content: `Başvuru ${interaction.user.tag} tarafından reddedildi.`, embeds: interaction.message.embeds, components: [] });
+            await interaction.message.edit({ content: `Başvuru ${interaction.user.tag} tarafından reddedildi.`, embeds: interaction.message.embeds, components: [] });
             const applicant = await client.users.fetch(reg.discord_id).catch(() => null);
             if (applicant) await applicant.send('Gakuran kayıt başvurun reddedildi. Gerekirse yetkililerle iletişime geçebilirsin.').catch(() => {});
         }
     } catch (error) {
         console.error('Gakuran etkileşim hatası:', error);
-        if (interaction.isRepliable() && !interaction.replied && !interaction.deferred) {
-            await interaction.reply({ content: 'İşlem sırasında hata oluştu. Yetkililer Render günlüklerini kontrol etsin.', flags: MessageFlags.Ephemeral }).catch(() => {});
+
+        if (interaction.isRepliable()) {
+            const hataMesaji = 'İşlem sırasında hata oluştu. Yetkililer Render günlüklerini kontrol etsin.';
+            if (interaction.deferred || interaction.replied) {
+                await interaction.followUp({ content: hataMesaji, flags: MessageFlags.Ephemeral }).catch(() => {});
+            } else {
+                await interaction.reply({ content: hataMesaji, flags: MessageFlags.Ephemeral }).catch(() => {});
+            }
         }
     }
 });
